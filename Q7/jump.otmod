@@ -1,0 +1,9 @@
+Module
+  name: game_jump
+  description: View window with jump button
+  author: Alexis Gabiola
+  website: www.otclient.info
+  sandboxed: true
+  scripts: [ jump ]
+  @onLoad: init()
+  @onUnload: terminate()
