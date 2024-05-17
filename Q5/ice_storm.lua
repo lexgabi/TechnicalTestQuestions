@@ -1,53 +1,56 @@
---area 1 array
-local area1 = {
-{0, 0, 1, 1, 1, 0, 0},
-{0, 1, 1, 0, 1, 1, 0},
-{1, 1, 1, 0, 1, 1, 1},
-{1, 1, 1, 2, 1, 1, 1},
-{1, 1, 1, 0, 1, 1, 1},
-{0, 1, 1, 0, 1, 1, 0},
-{0, 0, 1, 1, 1, 0, 0}
+--Arrays to store combat instances and areas
+local combat = {}
+local areas = {
+--area 1
+{
+{0, 0, 0, 0, 1, 0, 0, 0, 0},
+{0, 0, 1, 1, 0, 1, 1, 0, 0},
+{0, 0, 0, 0, 0, 0, 0, 0, 0},
+{1, 1, 1, 1, 2, 1, 1, 1, 1},
+{0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 1, 1, 0, 1, 1, 0, 0},
+{0, 0, 0, 0, 1, 0, 0, 0, 0}
+},
+--area 2
+{
+{0, 0, 0, 0, 1, 0, 0, 0, 0},
+{0, 0, 0, 1, 1, 1, 0, 0, 0},
+{0, 0, 1, 1, 1, 1, 1, 0, 0},
+{0, 1, 1, 1, 1, 1, 1, 1, 0},
+{1, 1, 1, 1, 2, 1, 1, 1, 1},
+{1, 1, 1, 1, 1, 1, 1, 1, 1},
+{0, 1, 1, 1, 1, 1, 1, 0, 0},
+{0, 0, 1, 1, 1, 1, 1, 0, 0},
+{0, 0, 0, 0, 1, 0, 0, 0, 0}
+}
 }
 
---area 2 array
-local area2 = {
-{0, 1, 1, 1, 0},
-{1, 1, 1, 1, 1},	
-{1, 1, 2, 1, 1},
-{1, 1, 1, 1, 1},
-{0, 1, 1, 1, 0}
-}
+--Set up each combat instance
+for i = 1, #areas do
+	combat[i] = Combat()
+	combat[i]:setParameter(COMBAT_PARAM_TYPE, COMBAT_ICEDAMAGE)
+	combat[i]:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ICETORNADO)
+	combat[i]:setArea(createCombatArea(areas[i]))
 
---Set up Area1
-local combat1 = Combat()
-combat1:setParameter(COMBAT_PARAM_TYPE, COMBAT_ICEDAMAGE)
-combat1:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ICETORNADO)
-combat1:setArea(createCombatArea(area1))
+	--Function to calculate attack max and min
+	function onGetFormulaValues(player, level, magicLevel)
+		local min = (level / 5) + (magicLevel * 8) + 50
+		local max = (level / 5) + (magicLevel * 12) + 75
+		return -min, -max
+	end
 
---Set up Area2
-local combat2 = Combat()
-combat2:setParameter(COMBAT_PARAM_TYPE, COMBAT_ICEDAMAGE)
-combat2:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_ICETORNADO)
-combat2:setArea(createCombatArea(area2))
-
---Function that returns the min and max level/magic level
-function onGetFormulaValues(player, level, magicLevel)
-	local min = (level / 5) + (magicLevel * 5.5) + 25
-	local max = (level / 5) + (magicLevel * 11) + 50
-	return -min, -max
+	combat[i]:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
 end
 
---Callback which uses vaules from above function
-combat1:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
-combat2:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
-
---casts the spell of the second combat area
-local function castSpell(creatureId, variant)
-	combat2:execute(creature, variant)
+--Cast the spell for a certain combat instance
+local function castSpell(creatureId, variant, combatIndex)
+	combat[combatIndex]:execute(creature, variant)
 end
 
---delays second combat execution and executes first combat area
+--Delay casting the spell in the second area
 function onCastSpell(creature, variant)
-	addEvent(castSpell, 1000, creature.uid, variant)
-	return combat1:execute(creature, variant)
+	for i = 2, #areas do
+		addEvent(castSpell, 500, creature.uid, variant, i)
+	end
+	return combat[1]:execute(creature, variant)
 end
